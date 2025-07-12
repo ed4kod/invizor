@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ asset.name }} - Invizor{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Навигация -->
+    <div class="flex items-center space-x-2 text-sm text-gray-600">
+        <a href="/accounts" class="text-fastapi-green hover:text-fastapi-green-dark transition-colors">Счета</a>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        <a href="/assets/account/{{ asset.account_id }}" class="text-fastapi-green hover:text-fastapi-green-dark transition-colors">Имущество</a>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        <span class="text-gray-900">{{ asset.name }}</span>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-8">
+            <!-- Заголовок и кнопки -->
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-semibold text-gray-900 mb-2">{{ asset.name }}</h1>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-3 py-1 text-sm font-medium rounded-full
+                            {% if asset.status == 'active' %}bg-green-100 text-green-800
+                            {% elif asset.status == 'inactive' %}bg-gray-100 text-gray-800
+                            {% elif asset.status == 'damaged' %}bg-red-100 text-red-800
+                            {% elif asset.status == 'lost' %}bg-yellow-100 text-yellow-800
+                            {% endif %}">
+                            {{ asset.status }}
+                        </span>
+                        <span class="text-sm text-gray-500">
+                            ID: {{ asset.id }}
+                        </span>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('editAssetModal').classList.remove('hidden')" 
+                        class="bg-fastapi-green hover:bg-fastapi-green-dark text-white px-6 py-3 rounded-lg transition-colors font-medium shadow-sm">
+                    Редактировать
+                </button>
+            </div>
+
+            <!-- Изображение -->
+            <div class="mb-8">
+                {% if asset.image_filename %}
+                <div class="relative w-full max-w-2xl mx-auto">
+                    <div class="aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                        <img src="/uploads/{{ asset.image_filename }}" alt="{{ asset.name }}" 
+                             class="w-full h-full object-cover">
+                    </div>
+                </div>
+                {% else %}
+                <div class="w-full max-w-2xl mx-auto aspect-square bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
+                    <div class="text-center">
+                        <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-gray-500 font-medium">Изображение не загружено</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Описание -->
+            {% if asset.description %}
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Описание</h3>
+                <p class="text-gray-700 leading-relaxed">{{ asset.description }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Детали -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Информация</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between py-2 border-b border-gray-100">
+                            <span class="text-gray-600">Статус</span>
+                            <span class="font-medium text-gray-900">{{ asset.status }}</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-gray-100">
+                            <span class="text-gray-600">Счет</span>
+                            <span class="font-medium text-gray-900">{{ asset.account.name }}</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-gray-100">
+                            <span class="text-gray-600">Создано</span>
+                            <span class="font-medium text-gray-900">{{ asset.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                        </div>
+                        <div class="flex justify-between py-2">
+                            <span class="text-gray-600">Обновлено</span>
+                            <span class="font-medium text-gray-900">{{ asset.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div id="editAssetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-xl rounded-xl bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">Редактировать имущество</h3>
+                <button onclick="document.getElementById('editAssetModal').classList.add('hidden')" 
+                        class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form action="/assets/{{ asset.id }}/update" method="POST" enctype="multipart/form-data">
+                <div class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Название</label>
+                        <input type="text" id="name" name="name" value="{{ asset.name }}" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fastapi-green focus:border-fastapi-green transition-colors">
+                    </div>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Описание</label>
+                        <textarea id="description" name="description" rows="3" 
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fastapi-green focus:border-fastapi-green transition-colors">{{ asset.description or '' }}</textarea>
+                    </div>
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Статус</label>
+                        <select id="status" name="status" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-fastapi-green focus:border-fastapi-green transition-colors">
+                            <option value="active" {% if asset.status == 'active' %}selected{% endif %}>Активное</option>
+                            <option value="inactive" {% if asset.status == 'inactive' %}selected{% endif %}>Неактивное</option>
+                            <option value="damaged" {% if asset.status == 'damaged' %}selected{% endif %}>Повреждено</option>
+                            <option value="lost" {% if asset.status == 'lost' %}selected{% endif %}>Утеряно</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="image" class="block text-sm font-medium text-gray-700 mb-2">Изображение</label>
+                        {% if asset.image_filename %}
+                        <div class="mb-3">
+                            <div class="w-32 h-32 rounded-lg overflow-hidden border border-gray-200">
+                                <img src="/uploads/{{ asset.image_filename }}" alt="Текущее изображение" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                        </div>
+                        {% endif %}
+                        <input type="file" id="image" name="image" accept="image/*"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-fastapi-green focus:border-fastapi-green transition-colors">
+                        <p class="mt-2 text-sm text-gray-500">Оставьте пустым, чтобы сохранить текущее изображение</p>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-8">
+                    <button type="button" onclick="document.getElementById('editAssetModal').classList.add('hidden')" 
+                            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                        Отмена
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-fastapi-green text-white rounded-lg hover:bg-fastapi-green-dark transition-colors font-medium">
+                        Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
