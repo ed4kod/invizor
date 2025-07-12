@@ -19,7 +19,7 @@ async def get_current_user_from_cookie(request: Request, db: Session = Depends(g
             access_token = access_token[7:]
         
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username = payload.get("sub")
         if username is None:
             return None
     except JWTError:

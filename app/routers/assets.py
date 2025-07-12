@@ -27,7 +27,7 @@ def get_current_user_from_cookie(request: Request, db: Session):
             access_token = access_token[7:]
         
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username = payload.get("sub")
         if username is None:
             return None
     except JWTError:
@@ -158,13 +158,13 @@ async def update_asset(
     
     # Если загружено новое изображение, удаляем старое и сохраняем новое
     if image:
-        if asset.image_filename:
-            delete_file(asset.image_filename)
-        asset.image_filename = save_uploaded_file(image)
-    
-    asset.name = name
-    asset.description = description
-    asset.status = status
+        if asset.image_filename is not None:
+            delete_file(str(asset.image_filename))
+        new_filename = save_uploaded_file(image)
+        asset.image_filename = str(new_filename) if new_filename else None  # type: ignore
+    asset.name = str(name)  # type: ignore
+    asset.description = str(description)  # type: ignore
+    asset.status = str(status)  # type: ignore
     
     db.commit()
     db.refresh(asset)

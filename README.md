@@ -1,5 +1,7 @@
 # Invizor - Система управления имуществом
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-invizor-blue?logo=github)](https://github.com/ed4kod/invizor.git)
+
 Invizor - это веб-приложение на FastAPI для управления имуществом материально-ответственных лиц. Пользователи могут регистрироваться, создавать счета и управлять своим имуществом.
 
 ## Возможности
@@ -55,7 +57,7 @@ fastest/
 
 1. **Клонируйте репозиторий:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/ed4kod/invizor.git
 cd fastest
 ```
 
