@@ -4,16 +4,507 @@
     <meta charset="UTF-8">
     <title>{% block title %}Invizor{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .zoom-controls {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 25px;
+            padding: 8px 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .zoom-slider-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .zoom-slider {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .zoom-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .zoom-value {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .zoom-controls .btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+    </style>
     {% block head %}{% endblock %}
 </head>
 <body>
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         {% for message in messages %}
-          <div>{{ message }}</div>
+          <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
         {% endfor %}
       {% endif %}
     {% endwith %}
+    
     {% block content %}{% endblock %}
+    
+    <!-- Модальное окно для зума изображений -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-header border-0">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-0 position-relative">
+                    <div id="imageContainer" class="position-relative" style="overflow: hidden; max-height: 80vh;">
+                        <img id="modalImage" src="" class="img-fluid" style="max-height: 80vh; transition: transform 0.3s ease; cursor: zoom-in; will-change: transform; transform-origin: center center;">
+                    </div>
+                    
+                    <!-- Кнопки навигации -->
+                    <button type="button" class="btn position-absolute top-50 start-0 translate-middle-y ms-3" 
+                            onclick="previousImage()" id="prevBtn" style="display: none; z-index: 1050; font-size: 1.5rem; padding: 10px 15px; background-color: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.4);">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-3" 
+                            onclick="nextImage()" id="nextBtn" style="display: none; z-index: 1050; font-size: 1.5rem; padding: 10px 15px; background-color: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.4);">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Счетчик изображений -->
+                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3">
+                        <span id="imageCounter" class="badge bg-dark bg-opacity-75" style="display: none;"></span>
+                    </div>
+                    
+                    <!-- Регулятор зума -->
+                    <div class="position-absolute top-0 end-0 m-3">
+                        <div id="zoomSlider" class="d-flex align-items-center gap-2" style="display: none !important;">
+                            <div class="zoom-controls">
+                                <button type="button" class="btn btn-sm btn-outline-light" onclick="changeZoom(-0.2)" title="Уменьшить">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <div class="zoom-slider-container">
+                                    <input type="range" id="zoomRange" min="50" max="300" value="100" 
+                                           class="zoom-slider" 
+                                           oninput="setZoomFromSlider(this.value)"
+                                           title="Регулировка зума">
+                                    <div class="zoom-value" id="zoomValue">100%</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-light" onclick="changeZoom(0.2)" title="Увеличить">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Панель с миниатюрами -->
+                    <div id="thumbnailsPanel" class="position-absolute bottom-0 start-0 end-0 p-3" style="background: linear-gradient(transparent, rgba(0,0,0,0.7)); display: none;">
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <!-- Миниатюры будут добавлены через JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentImageIndex = 0;
+        let imageUrls = [];
+        let currentZoom = 1;
+        let minZoom = 0.5;
+        let maxZoom = 3;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let currentTranslateX = 0;
+        let currentTranslateY = 0;
+        
+        // Функция для открытия изображения в модальном окне по индексу
+        function openImageModalByIndex(imageIndex) {
+            if (!window.imageUrls || !window.imageUrls[imageIndex]) {
+                console.error('Изображение не найдено:', imageIndex, window.imageUrls);
+                return;
+            }
+            
+            const imageSrc = window.imageUrls[imageIndex];
+            currentImageIndex = imageIndex;
+            imageUrls = window.imageUrls;
+            
+            console.log('Открытие модального окна:', { imageSrc, imageIndex, imageUrls });
+            
+            document.getElementById('modalImage').src = imageSrc;
+            
+            // Показываем/скрываем кнопки навигации
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const counter = document.getElementById('imageCounter');
+            const zoomSlider = document.getElementById('zoomSlider');
+            const thumbnailsPanel = document.getElementById('thumbnailsPanel');
+            
+            console.log('Количество изображений:', imageUrls.length);
+            
+            // Показываем регулятор зума всегда
+            zoomSlider.style.display = 'flex !important';
+            
+            if (imageUrls.length > 1) {
+                prevBtn.style.display = 'block';
+                nextBtn.style.display = 'block';
+                counter.style.display = 'block';
+                counter.textContent = `${currentImageIndex + 1} / ${imageUrls.length}`;
+                thumbnailsPanel.style.display = 'block';
+                createThumbnails();
+                console.log('Кнопки навигации и миниатюры показаны');
+            } else {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                counter.style.display = 'none';
+                thumbnailsPanel.style.display = 'none';
+                console.log('Кнопки навигации и миниатюры скрыты (только одно изображение)');
+            }
+            
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+            
+            // Сбрасываем зум при открытии нового изображения
+            resetZoom();
+            
+            // Добавляем обработчик двойного клика для сброса зума
+            const modalImage = document.getElementById('modalImage');
+            modalImage.ondblclick = function() {
+                resetZoom();
+            };
+        }
+        
+        // Функция для сброса зума
+        function resetZoom() {
+            currentZoom = 1;
+            currentTranslateX = 0;
+            currentTranslateY = 0;
+            const modalImage = document.getElementById('modalImage');
+            const zoomValue = document.getElementById('zoomValue');
+            const zoomRange = document.getElementById('zoomRange');
+            
+            modalImage.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${currentZoom})`;
+            modalImage.style.cursor = 'zoom-in';
+            zoomValue.textContent = '100%';
+            zoomRange.value = 100;
+        }
+        
+        // Функция для изменения зума
+        function changeZoom(delta) {
+            const newZoom = Math.max(minZoom, Math.min(maxZoom, currentZoom + delta));
+            if (newZoom !== currentZoom) {
+                const oldZoom = currentZoom;
+                currentZoom = newZoom;
+                
+                // Если уменьшаем зум до 100% или меньше, полностью сбрасываем
+                if (newZoom < oldZoom && newZoom <= 1) {
+                    resetZoom();
+                    return;
+                }
+                
+                const modalImage = document.getElementById('modalImage');
+                const zoomValue = document.getElementById('zoomValue');
+                const zoomRange = document.getElementById('zoomRange');
+                
+                modalImage.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${currentZoom})`;
+                modalImage.style.cursor = currentZoom > 1 ? 'grab' : 'zoom-in';
+                zoomValue.textContent = `${Math.round(currentZoom * 100)}%`;
+                zoomRange.value = Math.round(currentZoom * 100);
+            }
+        }
+        
+        // Функция для установки зума через ползунок
+        function setZoomFromSlider(value) {
+            const zoom = value / 100;
+            if (zoom !== currentZoom) {
+                const oldZoom = currentZoom;
+                currentZoom = zoom;
+                
+                // Если уменьшаем зум до 100% или меньше, полностью сбрасываем
+                if (zoom < oldZoom && zoom <= 1) {
+                    resetZoom();
+                    return;
+                }
+                
+                const modalImage = document.getElementById('modalImage');
+                const zoomValue = document.getElementById('zoomValue');
+                
+                modalImage.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${currentZoom})`;
+                modalImage.style.cursor = currentZoom > 1 ? 'grab' : 'zoom-in';
+                zoomValue.textContent = `${Math.round(currentZoom * 100)}%`;
+            }
+        }
+        
+        // Функция для создания миниатюр
+        function createThumbnails() {
+            const thumbnailsContainer = document.querySelector('#thumbnailsPanel .d-flex');
+            thumbnailsContainer.innerHTML = '';
+            
+            imageUrls.forEach((url, index) => {
+                const thumbnail = document.createElement('img');
+                thumbnail.src = url;
+                thumbnail.className = 'img-thumbnail';
+                thumbnail.style.cssText = 'width: 60px; height: 60px; object-fit: cover; cursor: pointer; border: 2px solid transparent;';
+                
+                // Подсвечиваем текущее изображение
+                if (index === currentImageIndex) {
+                    thumbnail.style.borderColor = '#fff';
+                    thumbnail.style.opacity = '1';
+                } else {
+                    thumbnail.style.opacity = '0.7';
+                }
+                
+                // Добавляем обработчик клика
+                thumbnail.onclick = () => {
+                    currentImageIndex = index;
+                    document.getElementById('modalImage').src = url;
+                    document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${imageUrls.length}`;
+                    updateThumbnailsSelection();
+                    resetZoom(); // Сбрасываем зум при переключении
+                };
+                
+                thumbnailsContainer.appendChild(thumbnail);
+            });
+        }
+        
+        // Функция для обновления выделения миниатюр
+        function updateThumbnailsSelection() {
+            const thumbnails = document.querySelectorAll('#thumbnailsPanel .img-thumbnail');
+            thumbnails.forEach((thumbnail, index) => {
+                if (index === currentImageIndex) {
+                    thumbnail.style.borderColor = '#fff';
+                    thumbnail.style.opacity = '1';
+                } else {
+                    thumbnail.style.borderColor = 'transparent';
+                    thumbnail.style.opacity = '0.7';
+                }
+            });
+        }
+        
+        // Функция для перехода к предыдущему изображению
+        function previousImage() {
+            console.log('Нажата кнопка "Предыдущее"', { currentImageIndex, imageUrls });
+            if (imageUrls.length > 1) {
+                currentImageIndex = (currentImageIndex - 1 + imageUrls.length) % imageUrls.length;
+                document.getElementById('modalImage').src = imageUrls[currentImageIndex];
+                document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${imageUrls.length}`;
+                updateThumbnailsSelection(); // Обновляем выделение миниатюр
+                resetZoom(); // Сбрасываем зум при переключении
+                console.log('Переход к предыдущему изображению:', currentImageIndex, imageUrls[currentImageIndex]);
+            }
+        }
+        
+        // Функция для перехода к следующему изображению
+        function nextImage() {
+            console.log('Нажата кнопка "Следующее"', { currentImageIndex, imageUrls });
+            if (imageUrls.length > 1) {
+                currentImageIndex = (currentImageIndex + 1) % imageUrls.length;
+                document.getElementById('modalImage').src = imageUrls[currentImageIndex];
+                document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${imageUrls.length}`;
+                updateThumbnailsSelection(); // Обновляем выделение миниатюр
+                resetZoom(); // Сбрасываем зум при переключении
+                console.log('Переход к следующему изображению:', currentImageIndex, imageUrls[currentImageIndex]);
+            }
+        }
+        
+        // Обработка скролла мыши для зума изображения
+        document.addEventListener('wheel', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (modal.classList.contains('show')) {
+                const modalImage = document.getElementById('modalImage');
+                const rect = modalImage.getBoundingClientRect();
+                
+                // Проверяем, что курсор находится над изображением
+                if (event.clientX >= rect.left && event.clientX <= rect.right &&
+                    event.clientY >= rect.top && event.clientY <= rect.bottom) {
+                    event.preventDefault();
+                    
+                    // Определяем направление скролла (увеличиваем скорость)
+                    const delta = event.deltaY > 0 ? -0.25 : 0.25;
+                    changeZoom(delta);
+                }
+            }
+        });
+        
+        // Обработчики для перетаскивания изображения
+        let animationFrameId = null;
+        
+        document.addEventListener('mousedown', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (modal.classList.contains('show')) {
+                const modalImage = document.getElementById('modalImage');
+                const rect = modalImage.getBoundingClientRect();
+                
+                // Проверяем, что клик был по изображению и зум увеличен
+                if (event.clientX >= rect.left && event.clientX <= rect.right &&
+                    event.clientY >= rect.top && event.clientY <= rect.bottom && currentZoom > 1) {
+                    event.preventDefault();
+                    isDragging = true;
+                    dragStartX = event.clientX - currentTranslateX;
+                    dragStartY = event.clientY - currentTranslateY;
+                    modalImage.style.cursor = 'grabbing';
+                    modalImage.style.userSelect = 'none';
+                    modalImage.style.transition = 'none';
+                }
+            }
+        });
+        
+        document.addEventListener('mousemove', function(event) {
+            if (isDragging) {
+                event.preventDefault();
+                
+                // Отменяем предыдущий кадр анимации
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                
+                // Планируем обновление на следующий кадр
+                animationFrameId = requestAnimationFrame(() => {
+                    let newTranslateX = event.clientX - dragStartX;
+                    let newTranslateY = event.clientY - dragStartY;
+                    
+                    // Ограничиваем перетаскивание, чтобы изображение не уходило слишком далеко
+                    const container = document.getElementById('imageContainer');
+                    const image = document.getElementById('modalImage');
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    // Вычисляем размеры изображения с учетом зума
+                    const imageWidth = image.naturalWidth * currentZoom;
+                    const imageHeight = image.naturalHeight * currentZoom;
+                    
+                    // Вычисляем максимальные смещения
+                    const maxTranslateX = Math.max(0, (imageWidth - containerRect.width) / 2);
+                    const maxTranslateY = Math.max(0, (imageHeight - containerRect.height) / 2);
+                    
+                    // Применяем ограничения
+                    currentTranslateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, newTranslateX));
+                    currentTranslateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, newTranslateY));
+                    
+                    const modalImage = document.getElementById('modalImage');
+                    modalImage.style.transform = `translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0) scale(${currentZoom})`;
+                });
+            }
+        });
+        
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                const modalImage = document.getElementById('modalImage');
+                modalImage.style.cursor = 'grab';
+                modalImage.style.userSelect = 'auto';
+                modalImage.style.transition = 'transform 0.3s ease';
+                
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        });
+        
+        // Обработка клавиатуры
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (modal.classList.contains('show')) {
+                switch(event.key) {
+                    case 'ArrowLeft':
+                        event.preventDefault();
+                        previousImage();
+                        break;
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        nextImage();
+                        break;
+                    case 'Escape':
+                        bootstrap.Modal.getInstance(modal).hide();
+                        break;
+                    case '+':
+                    case '=':
+                        event.preventDefault();
+                        changeZoom(0.25);
+                        break;
+                    case '-':
+                        event.preventDefault();
+                        changeZoom(-0.25);
+                        break;
+                    case '0':
+                        event.preventDefault();
+                        resetZoom();
+                        break;
+                }
+            }
+        });
+        
+        // Функция для удаления изображения через AJAX
+        function deleteImage(assetId, imageIndex, element) {
+            if (confirm('Удалить это изображение?')) {
+                fetch(`/asset/${assetId}/remove_image/${imageIndex}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Удаляем ячейку таблицы из DOM
+                        const td = element.closest('td');
+                        if (td) {
+                            td.remove();
+                        }
+                        // Перезагружаем страницу для корректного отображения таблицы
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    } else {
+                        alert('Ошибка при удалении изображения');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при удалении изображения');
+                });
+            }
+        }
+    </script>
 </body>
 </html> 

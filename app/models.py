@@ -1,4 +1,5 @@
 from . import db
+import json
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,4 +28,28 @@ class Asset(db.Model):
     note = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(50), nullable=True)
     bill_id = db.Column(db.Integer, db.ForeignKey('bill.id'), nullable=False)
-    # фото пока не реализуем 
+    images = db.Column(db.Text, nullable=True)  # JSON строка с путями к изображениям
+    
+    def get_images(self):
+        """Возвращает список путей к изображениям"""
+        if self.images:
+            return json.loads(self.images)
+        return []
+    
+    def add_image(self, image_path):
+        """Добавляет путь к изображению (максимум 10)"""
+        images = self.get_images()
+        if len(images) < 10:
+            images.append(image_path)
+            self.images = json.dumps(images)
+            return True
+        return False
+    
+    def remove_image(self, image_index):
+        """Удаляет изображение по индексу"""
+        images = self.get_images()
+        if 0 <= image_index < len(images):
+            removed_image = images.pop(image_index)
+            self.images = json.dumps(images)
+            return removed_image
+        return None 

@@ -1,9 +1,37 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from .models import User, Bill, Asset
 from . import db
+import os
+import uuid
 
 bp = Blueprint('main', __name__)
+
+def allowed_file(filename):
+    """Проверяет, разрешён ли тип файла"""
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_uploaded_file(file):
+    """Сохраняет загруженный файл и возвращает путь"""
+    if file and allowed_file(file.filename):
+        # Создаём уникальное имя файла
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        
+        # Создаём папку для загрузок, если её нет
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Сохраняем файл
+        file_path = os.path.join(upload_folder, unique_filename)
+        file.save(file_path)
+        
+        # Возвращаем относительный путь для сохранения в БД
+        return f'uploads/{unique_filename}'
+    return None
 
 @bp.route('/')
 def index():
@@ -78,6 +106,7 @@ def bill_detail(bill_id):
         location = request.form['location']
         note = request.form['note']
         status = request.form['status']
+        
         asset = Asset(
             name=name,
             inventory_number=inventory_number,
@@ -91,9 +120,88 @@ def bill_detail(bill_id):
         )
         db.session.add(asset)
         db.session.commit()
+        
+        # Обработка загруженных изображений
+        files = request.files.getlist('images')
+        for file in files:
+            if file and file.filename:
+                image_path = save_uploaded_file(file)
+                if image_path:
+                    asset.add_image(image_path)
+        
+        db.session.commit()
         return redirect(url_for('main.bill_detail', bill_id=bill.id))
+    
     assets = Asset.query.filter_by(bill_id=bill.id).all()
+    
+    # Создаем список URL-ов изображений для каждого имущества
+    for asset in assets:
+        asset.image_urls = [url_for('static', filename=image) for image in asset.get_images()]
+    
     return render_template('bill_detail.html', bill=bill, assets=assets)
+
+@bp.route('/asset/<int:asset_id>/add_images', methods=['POST'])
+def add_images_to_asset(asset_id):
+    """Добавляет изображения к существующему имуществу"""
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
+    
+    asset = Asset.query.get_or_404(asset_id)
+    bill = Bill.query.get(asset.bill_id)
+    if bill.user_id != session['user_id']:
+        flash('Нет доступа к этому имуществу')
+        return redirect(url_for('main.index'))
+    
+    files = request.files.getlist('images')
+    for file in files:
+        if file and file.filename:
+            image_path = save_uploaded_file(file)
+            if image_path:
+                if not asset.add_image(image_path):
+                    flash('Достигнут лимит в 10 изображений')
+                    break
+    
+    db.session.commit()
+    return redirect(url_for('main.asset_detail', asset_id=asset.id))
+
+@bp.route('/asset/<int:asset_id>/remove_image/<int:image_index>', methods=['POST'])
+def remove_image_from_asset(asset_id, image_index):
+    """Удаляет изображение из имущества"""
+    if 'user_id' not in session:
+        if request.headers.get('Content-Type') == 'application/json':
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+        return redirect(url_for('main.login'))
+    
+    asset = Asset.query.get_or_404(asset_id)
+    bill = Bill.query.get(asset.bill_id)
+    if bill.user_id != session['user_id']:
+        if request.headers.get('Content-Type') == 'application/json':
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        flash('Нет доступа к этому имуществу')
+        return redirect(url_for('main.index'))
+    
+    # Удаляем изображение из БД
+    removed_image_path = asset.remove_image(image_index)
+    if removed_image_path:
+        # Удаляем файл с диска
+        try:
+            file_path = os.path.join(current_app.root_path, 'static', removed_image_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Ошибка при удалении файла: {e}")
+        
+        db.session.commit()
+        
+        if request.headers.get('Content-Type') == 'application/json':
+            return jsonify({'success': True, 'message': 'Изображение удалено'})
+        flash('Изображение удалено')
+    else:
+        if request.headers.get('Content-Type') == 'application/json':
+            return jsonify({'success': False, 'error': 'Ошибка при удалении изображения'})
+        flash('Ошибка при удалении изображения')
+    
+    return redirect(url_for('main.asset_detail', asset_id=asset.id))
 
 @bp.route('/asset/<int:asset_id>')
 def asset_detail(asset_id):
@@ -104,4 +212,8 @@ def asset_detail(asset_id):
     if bill.user_id != session['user_id']:
         flash('Нет доступа к этому имуществу')
         return redirect(url_for('main.index'))
-    return render_template('asset_detail.html', asset=asset, bill=bill) 
+    
+    # Создаем список URL-ов изображений для JavaScript
+    image_urls = [url_for('static', filename=image) for image in asset.get_images()]
+    
+    return render_template('asset_detail.html', asset=asset, bill=bill, image_urls=image_urls) 

@@ -1,17 +1,125 @@
 {% extends 'base.html' %}
 {% block title %}Имущество: {{ asset.name }}{% endblock %}
 {% block content %}
-<div class="container mt-5" style="max-width: 600px;">
+<div class="container mt-5" style="max-width: 1200px;">
   <h1 class="mb-4">Имущество: {{ asset.name }}</h1>
-  <ul class="list-group mb-4">
-    <li class="list-group-item">Инвентарный номер: {{ asset.inventory_number }}</li>
-    <li class="list-group-item">Дата учёта: {{ asset.registration_date }}</li>
-    <li class="list-group-item">Балансовая стоимость: {{ asset.balance_value }}</li>
-    <li class="list-group-item">Количество: {{ asset.quantity }}</li>
-    <li class="list-group-item">Место: {{ asset.location }}</li>
-    <li class="list-group-item">Примечание: {{ asset.note }}</li>
-    <li class="list-group-item">Статус: {{ asset.status }}</li>
-  </ul>
-  <p><a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}" class="btn btn-outline-secondary">Назад к счёту</a></p>
+  
+  <!-- Информация об имуществе -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Информация об имуществе</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <p><strong>Инвентарный номер:</strong> {{ asset.inventory_number }}</p>
+          <p><strong>Дата учёта:</strong> {{ asset.registration_date }}</p>
+          <p><strong>Балансовая стоимость:</strong> {{ asset.balance_value }}</p>
+          <p><strong>Количество:</strong> {{ asset.quantity }}</p>
+        </div>
+        <div class="col-md-6">
+          <p><strong>Место:</strong> {{ asset.location or 'Не указано' }}</p>
+          <p><strong>Статус:</strong> {{ asset.status or 'Не указано' }}</p>
+          <p><strong>Примечание:</strong> {{ asset.note or 'Нет' }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Галерея изображений в виде сетки -->
+  <div class="mb-4">
+    <h3>Изображения</h3>
+    <div class="table-responsive">
+      <table class="table table-borderless">
+        <tbody>
+          {% for i in range(0, image_urls|length, 5) %}
+            <tr>
+              {% for j in range(5) %}
+                {% if i + j < image_urls|length %}
+                  <td class="p-0" style="width: 20%;">
+                    <div class="position-relative d-inline-block">
+                      <img src="{{ image_urls[i + j] }}" 
+                           class="img-thumbnail" 
+                           alt="{{ asset.name }}" 
+                           style="width: 200px; height: 200px; object-fit: cover; cursor: pointer;"
+                           data-image-index="{{ i + j }}"
+                           onclick="openImageModalByIndex({{ i + j }})"
+                           title="Нажмите для увеличения">
+                      <button type="button" 
+                              class="btn btn-danger btn-sm position-absolute top-0 end-0" 
+                              onclick="deleteImage({{ asset.id }}, {{ i + j }}, this)" 
+                              title="Удалить изображение"
+                              style="z-index: 10; margin: 5px;">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                {% else %}
+                  <td style="width: 20%;"></td>
+                {% endif %}
+              {% endfor %}
+            </tr>
+          {% endfor %}
+          <!-- Строка с кнопкой добавления -->
+          {% if image_urls|length < 10 %}
+            <tr>
+              <td class="p-0" style="width: 20%;">
+                <div class="d-inline-block">
+                  <div class="img-thumbnail d-flex align-items-center justify-content-center" 
+                       style="width: 200px; height: 200px; border: 2px dashed #ccc; cursor: pointer;"
+                       onclick="document.getElementById('images').click()"
+                       title="Добавить изображение">
+                    <i class="bi bi-plus-circle" style="font-size: 2rem; color: #ccc;"></i>
+                  </div>
+                </div>
+              </td>
+              <td colspan="4" style="width: 80%;"></td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Скрытая форма добавления изображений -->
+  {% if image_urls|length < 10 %}
+    <div class="card mb-4" style="display: none;">
+      <div class="card-header">
+        <h5 class="mb-0">Добавить изображения</h5>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('main.add_images_to_asset', asset_id=asset.id) }}" enctype="multipart/form-data" id="imageForm">
+          <div class="mb-3">
+            <label for="images" class="form-label" id="imageCounter">Выберите изображения (осталось {{ 10 - image_urls|length }})</label>
+            <input type="file" class="form-control" name="images" id="images" multiple accept="image/*" required onchange="submitForm()">
+            <div class="form-text">Можно выбрать несколько файлов. Поддерживаются форматы: JPG, PNG, GIF, WebP</div>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-upload"></i> ↑ Добавить изображения
+          </button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i> ℹ Достигнут лимит в 10 изображений
+    </div>
+  {% endif %}
+  
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> ← Назад к счёту
+    </a>
+  </div>
 </div>
+
+<script>
+function submitForm() {
+    document.getElementById('imageForm').submit();
+}
+
+// Инициализация глобального массива изображений
+window.imageUrls = {{ image_urls | tojson }};
+console.log('Инициализирован массив изображений:', window.imageUrls);
+</script>
 {% endblock %} 

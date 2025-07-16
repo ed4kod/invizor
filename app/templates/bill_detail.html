@@ -5,15 +5,48 @@
   <h1 class="mb-3">Счёт: {{ bill.name }}</h1>
   <p class="mb-4">Описание: {{ bill.description }}</p>
   <h2>Имущество</h2>
-  <ul class="list-group mb-4">
+  <div class="row g-3 mb-4">
     {% for asset in assets %}
-      <li class="list-group-item"><a href="{{ url_for('main.asset_detail', asset_id=asset.id) }}">{{ asset.name }} ({{ asset.inventory_number }})</a></li>
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+          {% if asset.get_images() %}
+            <div class="position-relative">
+              <img src="{{ url_for('static', filename=asset.get_images()[0]) }}" 
+                   class="card-img-top" 
+                   alt="{{ asset.name }}" 
+                   style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;"
+                   onclick="openImageModal('{{ url_for('static', filename=asset.get_images()[0]) }}', 0, {{ asset.image_urls | tojson }})"
+                   title="Нажмите для увеличения">
+              <button type="button" 
+                      class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" 
+                      onclick="deleteImage({{ asset.id }}, 0, this)" 
+                      title="Удалить изображение"
+                      style="z-index: 10;">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ asset.name }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Инв. №: {{ asset.inventory_number }}</h6>
+            <p class="card-text mb-1">Место: {{ asset.location or 'Не указано' }}</p>
+            <p class="card-text mb-1">Статус: {{ asset.status or 'Не указано' }}</p>
+            <a href="{{ url_for('main.asset_detail', asset_id=asset.id) }}" class="btn btn-outline-primary btn-sm mt-2">
+              <i class="bi bi-eye"></i> Подробнее
+            </a>
+          </div>
+        </div>
+      </div>
     {% else %}
-      <li class="list-group-item">Имущества нет</li>
+      <div class="col-12">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> Имущества нет
+        </div>
+      </div>
     {% endfor %}
-  </ul>
+  </div>
   <h2 class="mb-3">Добавить имущество</h2>
-  <form method="post" class="row g-2">
+  <form method="post" enctype="multipart/form-data" class="row g-2">
     <div class="col-md-3">
       <input type="text" class="form-control mb-2" name="name" placeholder="Наименование" required>
     </div>
@@ -39,9 +72,19 @@
       <input type="text" class="form-control mb-2" name="status" placeholder="Статус">
     </div>
     <div class="col-12">
-      <button type="submit" class="btn btn-primary">Добавить</button>
+      <label for="images" class="form-label">Изображения (до 10 файлов)</label>
+      <input type="file" class="form-control mb-2" name="images" id="images" multiple accept="image/*">
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Добавить
+      </button>
     </div>
   </form>
-  <p class="mt-4"><a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">Назад к счетам</a></p>
+  <p class="mt-4">
+    <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Назад к счетам
+    </a>
+  </p>
 </div>
 {% endblock %} 
