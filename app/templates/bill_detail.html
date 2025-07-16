@@ -1,27 +1,47 @@
 {% extends 'base.html' %}
 {% block title %}Счёт: {{ bill.name }}{% endblock %}
 {% block content %}
-<h1>Счёт: {{ bill.name }}</h1>
-<p>Описание: {{ bill.description }}</p>
-<h2>Имущество</h2>
-<ul>
-  {% for asset in assets %}
-    <li><a href="{{ url_for('main.asset_detail', asset_id=asset.id) }}">{{ asset.name }} ({{ asset.inventory_number }})</a></li>
-  {% else %}
-    <li>Имущества нет</li>
-  {% endfor %}
-</ul>
-<h2>Добавить имущество</h2>
-<form method="post">
-  <input type="text" name="name" placeholder="Наименование" required><br>
-  <input type="text" name="inventory_number" placeholder="Инвентарный номер" required><br>
-  <input type="date" name="registration_date" placeholder="Дата учёта" required><br>
-  <input type="number" step="0.01" name="balance_value" placeholder="Балансовая стоимость" required><br>
-  <input type="number" name="quantity" placeholder="Количество" required><br>
-  <input type="text" name="location" placeholder="Место"><br>
-  <input type="text" name="note" placeholder="Примечание"><br>
-  <input type="text" name="status" placeholder="Статус"><br>
-  <input type="submit" value="Добавить">
-</form>
-<p><a href="{{ url_for('main.index') }}">Назад к счетам</a></p>
+<div class="container mt-5">
+  <h1 class="mb-3">Счёт: {{ bill.name }}</h1>
+  <p class="mb-4">Описание: {{ bill.description }}</p>
+  <h2>Имущество</h2>
+  <ul class="list-group mb-4">
+    {% for asset in assets %}
+      <li class="list-group-item"><a href="{{ url_for('main.asset_detail', asset_id=asset.id) }}">{{ asset.name }} ({{ asset.inventory_number }})</a></li>
+    {% else %}
+      <li class="list-group-item">Имущества нет</li>
+    {% endfor %}
+  </ul>
+  <h2 class="mb-3">Добавить имущество</h2>
+  <form method="post" class="row g-2">
+    <div class="col-md-3">
+      <input type="text" class="form-control mb-2" name="name" placeholder="Наименование" required>
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control mb-2" name="inventory_number" placeholder="Инвентарный номер" required>
+    </div>
+    <div class="col-md-2">
+      <input type="date" class="form-control mb-2" name="registration_date" placeholder="Дата учёта" required>
+    </div>
+    <div class="col-md-2">
+      <input type="number" step="0.01" class="form-control mb-2" name="balance_value" placeholder="Балансовая стоимость" required>
+    </div>
+    <div class="col-md-2">
+      <input type="number" class="form-control mb-2" name="quantity" placeholder="Количество" required>
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control mb-2" name="location" placeholder="Место">
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control mb-2" name="note" placeholder="Примечание">
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control mb-2" name="status" placeholder="Статус">
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Добавить</button>
+    </div>
+  </form>
+  <p class="mt-4"><a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">Назад к счетам</a></p>
+</div>
 {% endblock %} 

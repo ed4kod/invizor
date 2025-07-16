@@ -1,19 +1,27 @@
 {% extends 'base.html' %}
 {% block title %}Счета{% endblock %}
 {% block content %}
-<h1>Ваши счета</h1>
-<ul>
-  {% for bill in bills %}
-    <li><a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}">{{ bill.name }}: {{ bill.description }}</a></li>
-  {% else %}
-    <li>Счетов нет</li>
-  {% endfor %}
-</ul>
-<h2>Добавить счёт</h2>
-<form method="post" action="{{ url_for('main.add_bill') }}">
-  <input type="text" name="name" placeholder="Название" required>
-  <input type="text" name="description" placeholder="Описание" required>
-  <input type="submit" value="Добавить">
-</form>
-<p><a href="{{ url_for('main.logout') }}">Выйти</a></p>
+<div class="container mt-5">
+  <h1 class="mb-4">Ваши счета</h1>
+  <ul class="list-group mb-4">
+    {% for bill in bills %}
+      <li class="list-group-item"><a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}">{{ bill.name }}: {{ bill.description }}</a></li>
+    {% else %}
+      <li class="list-group-item">Счетов нет</li>
+    {% endfor %}
+  </ul>
+  <h2 class="mb-3">Добавить счёт</h2>
+  <form method="post" action="{{ url_for('main.add_bill') }}" class="row g-2 align-items-center">
+    <div class="col-auto">
+      <input type="text" class="form-control" name="name" placeholder="Название" required>
+    </div>
+    <div class="col-auto">
+      <input type="text" class="form-control" name="description" placeholder="Описание" required>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Добавить</button>
+    </div>
+  </form>
+  <p class="mt-4"><a href="{{ url_for('main.logout') }}" class="btn btn-outline-secondary">Выйти</a></p>
+</div>
 {% endblock %} 
