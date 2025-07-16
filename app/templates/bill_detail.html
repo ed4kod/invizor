@@ -1,90 +1,160 @@
 {% extends 'base.html' %}
 {% block title %}Счёт: {{ bill.name }}{% endblock %}
+{% block head %}
+<style>
+.asset-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #dee2e6 !important;
+}
+.asset-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    border-color: #adb5bd !important;
+}
+.asset-image {
+    transition: transform 0.2s ease;
+}
+.asset-image:hover {
+    transform: scale(1.05);
+}
+
+.add-asset-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 2px dashed #dee2e6 !important;
+}
+.add-asset-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-color: #0d6efd !important;
+}
+</style>
+{% endblock %}
 {% block content %}
 <div class="container mt-5">
   <h1 class="mb-3">Счёт: {{ bill.name }}</h1>
   <p class="mb-4">Описание: {{ bill.description }}</p>
   <h2>Имущество</h2>
-  <div class="row g-3 mb-4">
+  <div class="row g-0 mb-4">
     {% for asset in assets %}
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100 shadow-sm">
+      <div class="col-12 col-md-3 col-lg-2 p-1">
+        <div class="card shadow border rounded-2 overflow-hidden asset-card h-100" style="max-width: 200px; cursor: pointer;" onclick="window.location.href='{{ url_for('main.asset_detail', asset_id=asset.id) }}'">
           {% if asset.get_images() %}
-            <div class="position-relative">
+            <div class="position-relative" style="aspect-ratio: 1; background: #f8f9fa;">
               <img src="{{ url_for('static', filename=asset.get_images()[0]) }}" 
-                   class="card-img-top" 
+                   class="w-100 h-100 asset-image" 
                    alt="{{ asset.name }}" 
-                   style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;"
-                   onclick="openImageModal('{{ url_for('static', filename=asset.get_images()[0]) }}', 0, {{ asset.image_urls | tojson }})"
-                   title="Нажмите для увеличения">
-              <button type="button" 
-                      class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2" 
-                      onclick="deleteImage({{ asset.id }}, 0, this)" 
-                      title="Удалить изображение"
-                      style="z-index: 10;">
-                <i class="bi bi-trash"></i>
-              </button>
+                   style="object-fit: contain;"
+                   title="Нажмите для просмотра подробностей">
+              <!-- Счетчик изображений -->
+              <div class="position-absolute bottom-0 end-0 m-1">
+                <span class="badge bg-dark bg-opacity-75 text-white small">
+                  <i class="bi bi-images"></i> {{ asset.get_images()|length }}
+                </span>
+              </div>
+            </div>
+          {% else %}
+            <div class="position-relative" style="aspect-ratio: 1; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-image text-muted" style="font-size: 1.5rem; opacity: 0.5;"></i>
             </div>
           {% endif %}
-          <div class="card-body">
-            <h5 class="card-title">{{ asset.name }}</h5>
-            <h6 class="card-subtitle mb-2 text-muted">Инв. №: {{ asset.inventory_number }}</h6>
-            <p class="card-text mb-1">Место: {{ asset.location or 'Не указано' }}</p>
-            <p class="card-text mb-1">Статус: {{ asset.status or 'Не указано' }}</p>
-            <a href="{{ url_for('main.asset_detail', asset_id=asset.id) }}" class="btn btn-outline-primary btn-sm mt-2">
-              <i class="bi bi-eye"></i> Подробнее
-            </a>
+          <div class="card-body p-2">
+            <h6 class="card-title mb-1 text-truncate small">{{ asset.name }}</h6>
+            <p class="card-text small text-muted mb-0">Инв. №: {{ asset.inventory_number }}</p>
           </div>
         </div>
       </div>
-    {% else %}
-      <div class="col-12">
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> Имущества нет
+    {% endfor %}
+    
+    <!-- Карточка добавления нового имущества -->
+    <div class="col-12 col-md-3 col-lg-2 p-1">
+      <div class="card shadow border rounded-2 overflow-hidden add-asset-card h-100" style="max-width: 200px; cursor: pointer;" onclick="openAddAssetModal()">
+        <div class="position-relative" style="aspect-ratio: 1; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+          <i class="bi bi-plus-circle text-primary" style="font-size: 3rem; opacity: 0.7;"></i>
+        </div>
+        <div class="card-body p-2 text-center d-flex flex-column justify-content-center">
+          <h6 class="card-title mb-0 text-truncate small text-primary">Добавить имущество</h6>
         </div>
       </div>
-    {% endfor %}
+    </div>
   </div>
-  <h2 class="mb-3">Добавить имущество</h2>
-  <form method="post" enctype="multipart/form-data" class="row g-2">
-    <div class="col-md-3">
-      <input type="text" class="form-control mb-2" name="name" placeholder="Наименование" required>
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control mb-2" name="inventory_number" placeholder="Инвентарный номер" required>
-    </div>
-    <div class="col-md-2">
-      <input type="date" class="form-control mb-2" name="registration_date" placeholder="Дата учёта" required>
-    </div>
-    <div class="col-md-2">
-      <input type="number" step="0.01" class="form-control mb-2" name="balance_value" placeholder="Балансовая стоимость" required>
-    </div>
-    <div class="col-md-2">
-      <input type="number" class="form-control mb-2" name="quantity" placeholder="Количество" required>
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control mb-2" name="location" placeholder="Место">
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control mb-2" name="note" placeholder="Примечание">
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control mb-2" name="status" placeholder="Статус">
-    </div>
-    <div class="col-12">
-      <label for="images" class="form-label">Изображения (до 10 файлов)</label>
-      <input type="file" class="form-control mb-2" name="images" id="images" multiple accept="image/*">
-    </div>
-    <div class="col-12">
-      <button type="submit" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Добавить
-      </button>
-    </div>
-  </form>
+
   <p class="mt-4">
     <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Назад к счетам
     </a>
   </p>
 </div>
+
+<!-- Модальное окно для добавления имущества -->
+<div class="modal fade" id="addAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle"></i> Добавить имущество
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data" id="addAssetForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="name" class="form-label">Наименование *</label>
+              <input type="text" class="form-control" name="name" id="name" required>
+            </div>
+            <div class="col-md-6">
+              <label for="inventory_number" class="form-label">Инвентарный номер *</label>
+              <input type="text" class="form-control" name="inventory_number" id="inventory_number" required>
+            </div>
+            <div class="col-md-6">
+              <label for="registration_date" class="form-label">Дата учёта *</label>
+              <input type="date" class="form-control" name="registration_date" id="registration_date" required>
+            </div>
+            <div class="col-md-6">
+              <label for="balance_value" class="form-label">Балансовая стоимость *</label>
+              <input type="number" step="0.01" class="form-control" name="balance_value" id="balance_value" required>
+            </div>
+            <div class="col-md-6">
+              <label for="quantity" class="form-label">Количество *</label>
+              <input type="number" class="form-control" name="quantity" id="quantity" required>
+            </div>
+            <div class="col-md-6">
+              <label for="location" class="form-label">Место</label>
+              <input type="text" class="form-control" name="location" id="location">
+            </div>
+            <div class="col-md-6">
+              <label for="note" class="form-label">Примечание</label>
+              <input type="text" class="form-control" name="note" id="note">
+            </div>
+            <div class="col-md-6">
+              <label for="status" class="form-label">Статус</label>
+              <input type="text" class="form-control" name="status" id="status">
+            </div>
+            <div class="col-12">
+              <label for="images" class="form-label">Изображения (до 10 файлов)</label>
+              <input type="file" class="form-control" name="images" id="images" multiple accept="image/*">
+              <div class="form-text">Можно выбрать несколько файлов. Поддерживаются форматы: JPG, PNG, GIF, WebP</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" onclick="submitAddAssetForm()">
+          <i class="bi bi-plus-circle"></i> Добавить имущество
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openAddAssetModal() {
+    new bootstrap.Modal(document.getElementById('addAssetModal')).show();
+}
+
+function submitAddAssetForm() {
+    document.getElementById('addAssetForm').submit();
+}
+</script>
 {% endblock %} 
