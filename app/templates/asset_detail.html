@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Имущество: {{ asset.name }}{% endblock %}
+{% block content %}
+<h1>Имущество: {{ asset.name }}</h1>
+<ul>
+  <li>Инвентарный номер: {{ asset.inventory_number }}</li>
+  <li>Дата учёта: {{ asset.registration_date }}</li>
+  <li>Балансовая стоимость: {{ asset.balance_value }}</li>
+  <li>Количество: {{ asset.quantity }}</li>
+  <li>Место: {{ asset.location }}</li>
+  <li>Примечание: {{ asset.note }}</li>
+  <li>Статус: {{ asset.status }}</li>
+</ul>
+<p><a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}">Назад к счёту</a></p>
+{% endblock %} 

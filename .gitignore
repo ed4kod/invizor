@@ -1,0 +1,31 @@
+# Виртуальное окружение
+venv/
+.venv/
+
+# База данных
+app.db
+*.sqlite3
+
+# Файлы Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Логи
+*.log
+
+# Конфиденциальные/локальные файлы
+.env
+.env.*
+
+# IDE/редактор
+.idea/
+.vscode/
+
+# Кэш
+.cache/
+
+# Файлы ОС
+.DS_Store
+Thumbs.db 

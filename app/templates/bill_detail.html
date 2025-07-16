@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Счёт: {{ bill.name }}{% endblock %}
+{% block content %}
+<h1>Счёт: {{ bill.name }}</h1>
+<p>Описание: {{ bill.description }}</p>
+<h2>Имущество</h2>
+<ul>
+  {% for asset in assets %}
+    <li><a href="{{ url_for('main.asset_detail', asset_id=asset.id) }}">{{ asset.name }} ({{ asset.inventory_number }})</a></li>
+  {% else %}
+    <li>Имущества нет</li>
+  {% endfor %}
+</ul>
+<h2>Добавить имущество</h2>
+<form method="post">
+  <input type="text" name="name" placeholder="Наименование" required><br>
+  <input type="text" name="inventory_number" placeholder="Инвентарный номер" required><br>
+  <input type="date" name="registration_date" placeholder="Дата учёта" required><br>
+  <input type="number" step="0.01" name="balance_value" placeholder="Балансовая стоимость" required><br>
+  <input type="number" name="quantity" placeholder="Количество" required><br>
+  <input type="text" name="location" placeholder="Место"><br>
+  <input type="text" name="note" placeholder="Примечание"><br>
+  <input type="text" name="status" placeholder="Статус"><br>
+  <input type="submit" value="Добавить">
+</form>
+<p><a href="{{ url_for('main.index') }}">Назад к счетам</a></p>
+{% endblock %} 
