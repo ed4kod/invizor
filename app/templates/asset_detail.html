@@ -12,126 +12,208 @@
 </div>
 {% endblock %}
 
+{% block head %}
+<style>
+.asset-main-flex {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+.asset-image-block {
+  min-width: 320px;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.asset-main-image {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1/1;
+  object-fit: contain;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(102,126,234,0.09);
+  margin-bottom: 1.2rem;
+  border: 2.5px solid #e3e7ef;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  cursor: zoom-in;
+}
+.asset-main-image:hover {
+  box-shadow: 0 8px 32px rgba(102,126,234,0.18);
+  border-color: #667eea;
+}
+.asset-thumbs-row {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  width: 100%;
+  justify-content: flex-start;
+}
+.asset-thumb {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.asset-thumb.selected {
+  border-color: #667eea;
+}
+.asset-thumb-add {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  border: 2px dashed #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 2rem;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.2s, color 0.2s;
+}
+.asset-thumb-add:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+.asset-info-table-wrap {
+  flex: 1 1 320px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(102,126,234,0.09);
+  overflow: hidden;
+  min-width: 320px;
+}
+.asset-info-table-title {
+  background: #667eea;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  padding: 1.2rem 2rem;
+  letter-spacing: 0.01em;
+}
+.asset-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.08rem;
+}
+.asset-info-table tr {
+  transition: background 0.18s;
+}
+.asset-info-table td {
+  padding: 1.1rem 2rem;
+  border-bottom: 1px solid #f0f1f7;
+  color: #23272f;
+}
+.asset-info-table td.label {
+  color: #2d3651;
+  font-weight: 700;
+  width: 220px;
+  background: none;
+}
+.asset-info-table tr:last-child td {
+  border-bottom: none;
+}
+@media (max-width: 1100px) {
+  .asset-main-flex {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .asset-image-block, .asset-info-table-wrap {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .asset-main-image {
+    max-width: 100%;
+  }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 1200px;">
-  <h1 class="mb-4">Имущество: {{ asset.name }}</h1>
-  
-  <!-- Информация об имуществе -->
-  <div class="card mb-4">
-    <div class="card-header">
-      <h5 class="mb-0">Информация об имуществе</h5>
-    </div>
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-6">
-          <p><strong>Инвентарный номер:</strong> {{ asset.inventory_number }}</p>
-          <p><strong>Дата учёта:</strong> {{ asset.registration_date }}</p>
-          <p><strong>Балансовая стоимость:</strong> {{ asset.balance_value }}</p>
-          <p><strong>Количество:</strong> {{ asset.quantity }}</p>
-        </div>
-        <div class="col-md-6">
-          <p><strong>Место:</strong> {{ asset.location or 'Не указано' }}</p>
-          <p><strong>Статус:</strong> {{ asset.status or 'Не указано' }}</p>
-          <p><strong>Примечание:</strong> {{ asset.note or 'Нет' }}</p>
-        </div>
+<div class="container">
+  <div class="asset-main-flex">
+    <!-- Левая часть: большая картинка и миниатюры -->
+    <div class="asset-image-block">
+      <img id="mainAssetImage" src="{{ image_urls[0] if image_urls else '' }}" class="asset-main-image" alt="{{ asset.name }}" onclick="openImageModalByIndex(0)">
+      <div class="asset-thumbs-row">
+        {% for url in image_urls %}
+          <img src="{{ url }}" class="asset-thumb{% if loop.index0 == 0 %} selected{% endif %}" alt="thumb" onclick="setMainAssetImage(this, '{{ url }}')">
+        {% endfor %}
+        {% if image_urls|length < 10 %}
+          <div class="asset-thumb-add" onclick="document.getElementById('images').click()" title="Добавить изображение">
+            <i class="bi bi-plus-circle"></i>
+          </div>
+        {% endif %}
       </div>
     </div>
-  </div>
-  
-  <!-- Галерея изображений в виде сетки -->
-  <div class="mb-4">
-    <h3>Изображения</h3>
-    <div class="table-responsive">
-      <table class="table table-borderless">
-        <tbody>
-          {% for i in range(0, image_urls|length, 5) %}
-            <tr>
-              {% for j in range(5) %}
-                {% if i + j < image_urls|length %}
-                  <td class="p-0" style="width: 20%;">
-                    <div class="position-relative d-inline-block">
-                      <img src="{{ image_urls[i + j] }}" 
-                           class="img-thumbnail" 
-                           alt="{{ asset.name }}" 
-                           style="width: 200px; height: 200px; object-fit: cover; cursor: pointer;"
-                           data-image-index="{{ i + j }}"
-                           onclick="openImageModalByIndex({{ i + j }})"
-                           title="Нажмите для увеличения">
-                      <button type="button" 
-                              class="btn btn-danger btn-sm position-absolute top-0 end-0" 
-                              onclick="deleteImage({{ asset.id }}, {{ i + j }}, this)" 
-                              title="Удалить изображение"
-                              style="z-index: 10; margin: 5px;">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                {% else %}
-                  <td style="width: 20%;"></td>
-                {% endif %}
-              {% endfor %}
-            </tr>
-          {% endfor %}
-          <!-- Строка с кнопкой добавления -->
-          {% if image_urls|length < 10 %}
-            <tr>
-              <td class="p-0" style="width: 20%;">
-                <div class="d-inline-block">
-                  <div class="img-thumbnail d-flex align-items-center justify-content-center" 
-                       style="width: 200px; height: 200px; border: 2px dashed #ccc; cursor: pointer;"
-                       onclick="document.getElementById('images').click()"
-                       title="Добавить изображение">
-                    <i class="bi bi-plus-circle" style="font-size: 2rem; color: #ccc;"></i>
-                  </div>
-                </div>
-              </td>
-              <td colspan="4" style="width: 80%;"></td>
-            </tr>
-          {% endif %}
-        </tbody>
+    <!-- Правая часть: таблица характеристик -->
+    <div class="asset-info-table-wrap mb-4">
+      <div class="asset-info-table-title">
+        {{ asset.name }}
+      </div>
+      <table class="asset-info-table">
+        <tr>
+          <td class="label">Инвентарный номер:</td>
+          <td>{{ asset.inventory_number }}</td>
+        </tr>
+        <tr>
+          <td class="label">Дата учёта:</td>
+          <td>{{ asset.registration_date }}</td>
+        </tr>
+        <tr>
+          <td class="label">Балансовая стоимость:</td>
+          <td>{{ asset.balance_value }}</td>
+        </tr>
+        <tr>
+          <td class="label">Количество:</td>
+          <td>{{ asset.quantity }}</td>
+        </tr>
+        <tr>
+          <td class="label">Место:</td>
+          <td>{{ asset.location or 'Не указано' }}</td>
+        </tr>
+        <tr>
+          <td class="label">Статус:</td>
+          <td>{{ asset.status or 'Не указано' }}</td>
+        </tr>
+        <tr>
+          <td class="label">Примечание:</td>
+          <td>{{ asset.note or 'Нет' }}</td>
+        </tr>
       </table>
     </div>
   </div>
-  
   <!-- Скрытая форма добавления изображений -->
   {% if image_urls|length < 10 %}
-    <div class="card mb-4" style="display: none;">
-      <div class="card-header">
-        <h5 class="mb-0">Добавить изображения</h5>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{{ url_for('main.add_images_to_asset', asset_id=asset.id) }}" enctype="multipart/form-data" id="imageForm">
-          <div class="mb-3">
-            <label for="images" class="form-label" id="imageCounter">Выберите изображения (осталось {{ 10 - image_urls|length }})</label>
-            <input type="file" class="form-control" name="images" id="images" multiple accept="image/*" required onchange="submitForm()">
-            <div class="form-text">Можно выбрать несколько файлов. Поддерживаются форматы: JPG, PNG, GIF, WebP</div>
-          </div>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-upload"></i> ↑ Добавить изображения
-          </button>
-        </form>
-      </div>
-    </div>
-  {% else %}
-    <div class="alert alert-info">
-      <i class="bi bi-info-circle"></i> ℹ Достигнут лимит в 10 изображений
-    </div>
+    <form method="post" action="{{ url_for('main.add_images_to_asset', asset_id=asset.id) }}" enctype="multipart/form-data" id="imageForm" style="display:none;">
+      <input type="file" class="form-control" name="images" id="images" multiple accept="image/*" required onchange="submitForm()">
+    </form>
   {% endif %}
-  
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 mt-4">
     <a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> ← Назад к счёту
     </a>
   </div>
 </div>
-
 <script>
+function setMainAssetImage(el, url) {
+  document.getElementById('mainAssetImage').src = url;
+  document.querySelectorAll('.asset-thumb').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+}
 function submitForm() {
     document.getElementById('imageForm').submit();
 }
-
-// Инициализация глобального массива изображений
 window.imageUrls = {{ image_urls | tojson }};
-console.log('Инициализирован массив изображений:', window.imageUrls);
 </script>
 {% endblock %} 
