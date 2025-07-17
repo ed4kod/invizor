@@ -199,11 +199,7 @@
       <input type="file" class="form-control" name="images" id="images" multiple accept="image/*" required onchange="submitForm()">
     </form>
   {% endif %}
-  <div class="d-flex gap-2 mt-4">
-    <a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> ← Назад к счёту
-    </a>
-  </div>
+  <!-- Кнопка 'Назад к счёту' удалена -->
 </div>
 <script>
 function setMainAssetImage(el, url) {

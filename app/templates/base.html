@@ -177,8 +177,9 @@
                 <ul class="navbar-nav ms-auto">
                     {% if session.user_id %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle"></i> Аккаунт
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-weight:600; font-size:1.15rem; color:#fff;">
+                                <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
+                                <span style="max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle;">{{ g.user.username if g.user else 'Пользователь' }}</span>
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{ url_for('main.logout') }}">
@@ -187,16 +188,7 @@
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.login' %}active{% endif %}" href="{{ url_for('main.login') }}">
-                                <i class="bi bi-box-arrow-in-right"></i> Войти
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.register' %}active{% endif %}" href="{{ url_for('main.register') }}">
-                                <i class="bi bi-person-plus"></i> Регистрация
-                            </a>
-                        </li>
+                        {% block navbar_extra %}{% endblock %}
                     {% endif %}
                 </ul>
             </div>

@@ -29,3 +29,8 @@ __pycache__/
 # Файлы ОС
 .DS_Store
 Thumbs.db 
+
+app/static/uploads/ 
+
+migrations/
+app/app.db 
