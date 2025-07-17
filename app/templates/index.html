@@ -1,27 +1,133 @@
 {% extends 'base.html' %}
 {% block title %}Счета{% endblock %}
+{% block head %}
+<style>
+.bill-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #dee2e6 !important;
+    cursor: pointer;
+}
+.bill-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    border-color: #adb5bd !important;
+}
+
+.add-bill-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 2px dashed #dee2e6 !important;
+    cursor: pointer;
+}
+.add-bill-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-color: #0d6efd !important;
+}
+
+.bill-icon {
+    font-size: 3rem;
+    opacity: 0.7;
+    color: #667eea;
+}
+
+.asset-count {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(102, 126, 234, 0.9);
+    color: white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
 {% block content %}
-<div class="container mt-5">
+<div class="container">
   <h1 class="mb-4">Ваши счета</h1>
-  <ul class="list-group mb-4">
+  
+  <div class="row g-3 mb-4">
     {% for bill in bills %}
-      <li class="list-group-item"><a href="{{ url_for('main.bill_detail', bill_id=bill.id) }}">{{ bill.name }}: {{ bill.description }}</a></li>
-    {% else %}
-      <li class="list-group-item">Счетов нет</li>
+      <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+        <div class="card shadow border rounded-3 bill-card h-100" onclick="window.location.href='{{ url_for('main.bill_detail', bill_id=bill.id) }}'">
+          <div class="card-body text-center p-4">
+            <div class="position-relative mb-3">
+              <i class="bi bi-building bill-icon"></i>
+              {% if bill.assets %}
+                <div class="asset-count">
+                  {{ bill.assets|length }}
+                </div>
+              {% endif %}
+            </div>
+            <h5 class="card-title mb-2">{{ bill.name }}</h5>
+            <p class="card-text text-muted small mb-3">{{ bill.description }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">
+                <i class="bi bi-calendar3"></i> Создан
+              </small>
+              <span class="badge bg-primary">Активен</span>
+            </div>
+          </div>
+        </div>
+      </div>
     {% endfor %}
-  </ul>
-  <h2 class="mb-3">Добавить счёт</h2>
-  <form method="post" action="{{ url_for('main.add_bill') }}" class="row g-2 align-items-center">
-    <div class="col-auto">
-      <input type="text" class="form-control" name="name" placeholder="Название" required>
+    
+    <!-- Карточка добавления нового счета -->
+    <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+      <div class="card shadow border rounded-3 add-bill-card h-100" onclick="openAddBillModal()">
+        <div class="card-body text-center p-4 d-flex flex-column justify-content-center">
+          <i class="bi bi-plus-circle text-primary" style="font-size: 3rem; opacity: 0.7;"></i>
+          <h5 class="card-title mt-3 mb-0 text-primary">Добавить счёт</h5>
+        </div>
+      </div>
     </div>
-    <div class="col-auto">
-      <input type="text" class="form-control" name="description" placeholder="Описание" required>
-    </div>
-    <div class="col-auto">
-      <button type="submit" class="btn btn-primary">Добавить</button>
-    </div>
-  </form>
-  <p class="mt-4"><a href="{{ url_for('main.logout') }}" class="btn btn-outline-secondary">Выйти</a></p>
+  </div>
 </div>
+
+<!-- Модальное окно для добавления счета -->
+<div class="modal fade" id="addBillModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle"></i> Добавить новый счёт
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{{ url_for('main.add_bill') }}" id="addBillForm">
+          <div class="mb-3">
+            <label for="name" class="form-label">Название счёта *</label>
+            <input type="text" class="form-control" name="name" id="name" placeholder="Введите название счёта" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Описание *</label>
+            <textarea class="form-control" name="description" id="description" rows="3" placeholder="Введите описание счёта" required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" onclick="submitAddBillForm()">
+          <i class="bi bi-plus-circle"></i> Добавить счёт
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openAddBillModal() {
+    new bootstrap.Modal(document.getElementById('addBillModal')).show();
+}
+
+function submitAddBillForm() {
+    document.getElementById('addBillForm').submit();
+}
+</script>
 {% endblock %} 

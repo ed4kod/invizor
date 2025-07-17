@@ -29,8 +29,19 @@
 }
 </style>
 {% endblock %}
+{% block breadcrumbs %}
+<div class="container">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}"><i class="bi bi-house"></i> Главная</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ bill.name }}</li>
+    </ol>
+  </nav>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
+<div class="container">
   <h1 class="mb-3">Счёт: {{ bill.name }}</h1>
   <p class="mb-4">Описание: {{ bill.description }}</p>
   <h2>Имущество</h2>

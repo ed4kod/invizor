@@ -41,6 +41,11 @@ def index():
             session.pop('user_id', None)
             return redirect(url_for('main.login'))
         bills = Bill.query.filter_by(user_id=user.id).all()
+        
+        # Загружаем имущество для каждого счета
+        for bill in bills:
+            bill.assets = Asset.query.filter_by(bill_id=bill.id).all()
+        
         return render_template('index.html', user=user, bills=bills)
     return redirect(url_for('main.login'))
 
