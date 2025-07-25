@@ -8,18 +8,21 @@
 
 2. Создайте виртуальное окружение и активируйте его:
    ```bash
-   python -m venv venv
-   venv\Scripts\activate  # Windows
+   python -m venv .venv
+   .venv\Scripts\activate  # Windows
    ```
 
 3. Установите зависимости:
    ```bash
    pip install -r requirements.txt
+   # Важно: убедитесь, что установился пакет flask-migrate
    ```
 
-4. Создайте базу данных:
+4. Инициализируйте и создайте базу данных:
    ```bash
-   flask --app main db upgrade
+   flask db init         # только при первом запуске
+   flask db migrate -m "init"
+   flask db upgrade
    ```
 
 5. Запустите сервер:
