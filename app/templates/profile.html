@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Профиль{% endblock %}
+{% block head %}
+<style>
+.profile-card {
+    max-width: 420px;
+    margin: 2.5rem auto;
+    background: #e3e7ef;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(35,41,70,0.09);
+    padding: 2.5rem 2rem;
+}
+.profile-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #232946;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.profile-info {
+    font-size: 1.15rem;
+    color: #232946;
+    margin-bottom: 1.2rem;
+    text-align: center;
+}
+.profile-info strong {
+    min-width: 120px;
+    display: inline-block;
+    text-align: right;
+}
+.profile-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    max-width: 320px;
+}
+.profile-list li {
+    margin-bottom: 0.7rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="profile-card">
+    <div class="profile-title">
+        <i class="bi bi-person-circle" style="font-size:2.5rem; vertical-align:middle;"></i>
+        Профиль
+    </div>
+    <ul class="profile-list">
+        <li><strong>ID:</strong>&nbsp;{{ user.id }}</li>
+        <li><strong>Email:</strong>&nbsp;{{ user.username }}</li>
+        <li><strong>Счетов:</strong>&nbsp;{{ user.bills|length }}</li>
+    </ul>
+</div>
+{% endblock %} 

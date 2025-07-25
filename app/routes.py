@@ -93,6 +93,13 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('main.login'))
 
+@bp.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
+    user = User.query.get(session['user_id'])
+    return render_template('profile.html', user=user)
+
 @bp.route('/bill/<int:bill_id>', methods=['GET', 'POST'])
 def bill_detail(bill_id):
     if 'user_id' not in session:

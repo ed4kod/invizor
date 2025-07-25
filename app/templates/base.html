@@ -198,6 +198,9 @@
                                 <span style="max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle;">{{ g.user.username if g.user else 'Пользователь' }}</span>
                             </a>
                             <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
+                                    <i class="bi bi-person"></i> Профиль
+                                </a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('main.logout') }}">
                                     <i class="bi bi-box-arrow-right"></i> Выйти
                                 </a></li>
